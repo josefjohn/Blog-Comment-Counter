@@ -7,6 +7,7 @@ import urllib2
 import datetime
 
 months = [1,2,3,4,5]
+weeks = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 my_url = 'http://livelearniterate.blogspot.com'
 weekly_time_increment = 604800 #seconds
 start_of_week = [1359417600, 1360022400, 1360627200, 1361232000, 1361836800,
@@ -86,16 +87,23 @@ def get_comment_details(list_of_comments):
             time_start = user.find('timestamp\'') + len('timestamp\': \'')
             time_end = user[time_start:].find('\'')
             time = user[time_start:time_start+time_end]
-            print name +':', time + ':', comment
+            #print name +':', time + ':', comment
+            week = 0
+            for i in weeks:
+                if int(time)/1000 <= start_of_week[i]:
+                    week = i
+                    break
             dict = {}
             dict['name'] = name
             dict['time'] = time
+            dict['week'] = week
             dict['comment'] = comment
+            print dict
             list_of_dicts.append(dict)
             #print dict
     #print list_of_dicts
     return list_of_dicts
 
-#list_of_comments = get_all_comments(get_all_blog_posts(my_url))
-#list_of_dictionaries = get_comment_details(list_of_comments)
+list_of_comments = get_all_comments(get_all_blog_posts(my_url))
+list_of_dictionaries = get_comment_details(list_of_comments)
 
