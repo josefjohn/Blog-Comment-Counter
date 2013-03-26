@@ -33,7 +33,7 @@ def get_all_blog_posts(url):
         html = urllib2.urlopen(url_to_scrape)
         for line in html:
             #if the line contains a link to a post
-            if (line.find('href=\'http://livelearniterate.blogspot.com/2013/0')> 0):
+            if (line.find('href=\'' + my_url + '/2013/0')> 0):
                 #get the beginning of the link
                 begin = line.find('<a href=\'http://') + len('<a href=\'')
                 #make sure it is a link
