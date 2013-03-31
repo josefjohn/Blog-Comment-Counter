@@ -86,10 +86,38 @@ def get_all_comments(blog_id):
 
     return comments
 
+#for each url, get all comments
+def get_comments_from_blogs(list_of_blog_urls):
+    all_comments_dict = {}
+    for blog_url in list_of_blog_urls:
+        blog_id = get_blog_id(blog_url)
+        list_of_comments = get_all_comments(blog_id)
+        all_comments_dict[blog_id] = list_of_comments
+    return all_comments_dict
+
+#cant do this, can only write string not lists
+#def write_comments_from_blogs_to_file(list_of_blog_urls, file):
+#    file_to_write_to = open(file, 'w')
+#    for blog_url in list_of_blog_urls:
+#        blog_id = get_blog_id(blog_url)
+#        list_of_comments = get_all_comments(blog_id)
+#        file_to_write_to.write(list_of_comments+'\n')
+#    file_to_write_to.close()
+
+#writes to file, 'a' appends, 'w' just writes
+def test_write_to_file():
+    with open('test.txt', 'a') as file_to_write_to:
+        file_to_write_to.write('test\n')
+        
+#gets the blog_urls from the file given
+def get_blog_urls_from_file(file):
+    blog_urls = [blog_url.strip() for blog_url in open(file)]
+    return blog_urls
 
 #################################################
+#list_of_blog_urls = get_blog_urls_from_file('blog_urls.txt')
 
-blog_url = 'http://gautam190g.blogspot.com'
-blog_id = get_blog_id(blog_url)
-
-print get_all_comments(blog_id)
+#print get_all_comments(blog_id)
+#print get_comments_from_blogs(list_of_blog_urls)
+test_write_to_file()
+#write_comments_from_blogs_to_file(list_of_blog_urls, 'blog_comments.txt')
