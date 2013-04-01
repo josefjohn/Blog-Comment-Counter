@@ -1,7 +1,21 @@
 # Authors: Gautam Jain & Josef John
 
+import pprint
+import gspread
 import rfc3339
 from apiclient.discovery import build
+from urlparse import urlparse
+
+#######################################################
+## TO BE EDITED
+start_of_week = [1359417600, 1360022400, 1360627200, 1361232000, 1361836800,
+                 1362441600, 1363046400, 1363651200, 1364256000, 1364860800,
+                 1365465600, 1366070400, 1366675200, 1367280000, 1367884800,
+                 1368489600, 1369174400]
+#######################################################
+
+# Google Docs Worksheet Info
+wks_name = 'Test Spreadsheet'
 
 # Semester dates
 sem_start = '2013-01-21'  # Must be a Monday
@@ -25,13 +39,44 @@ api_key = open('private_key.txt').readline()
 #   API key
 blogger = build('blogger', 'v3', developerKey=api_key)
 
+## Read credentials from txt file, and login with your Google account
+ga = open('google_account.txt').readline()
+gp = open('google_password.txt').readline()
+gc = gspread.login(ga, gp)
+
+
+# Returns the a list of blog URLs from the Google Docs
+def get_blog_URLs():
+    # Connect to Google Docs spreadsheet and get column with header 'Blog_URL'
+    wks = gc.open(wks_name).sheet1
+    url_header_cell = wks.find('Blog_URL')
+    blog_URLs_list = wks.col_values(url_header_cell.col)
+
+    # Filter through URLs to remove any non-Blogger entries
+    blog_URLs_list = filter(is_blogger_URL, blog_URLs_list)
+
+    return blog_URLs_list
+
+
+# Returns a boolean depending if URL is a Blogger/Blogspot URL
+def is_blogger_URL(url):
+    #return url.find('blogspot.com') != -1
+    return url is not None and 'blogspot.com' in url
+
 
 # Returns the blog ID for the given blog URL
 def get_blog_id(blog_url):
     response = blogger.blogs().getByUrl(
-        url=blog_url,
+        url=format_url(blog_url),
         fields="id").execute()
-    return response['id']
+    return str(response['id'])
+
+
+# Returns a formatted URL with 'http://'' prefix if does not already exist
+def format_url(url):
+    if not urlparse(url).scheme:
+        url = "http://" + url
+    return url
 
 
 # Returns a list of post IDs for the given blog that were
@@ -86,6 +131,62 @@ def get_all_comments(blog_id):
 
     return comments
 
+
+#returns list of dictionaries
+#each dictionary maps to a week
+#each dictionary contains author_id keys mapping to a set of comment_ids for that week
+#for each dictionary, keys are author_id, values are sets of the comments
+#call len(dict[author_id]) to get comments for a given week
+def get_total_comments(blog_ids):
+    # Initialize dictionaries
+    total_comments_dictionary_for_week = []
+    for i in range(0, len(start_of_week) - 1):
+        total_comments_dictionary_for_week.append(dict())
+
+    # Iterate through all blogs
+    for blog_id in blog_ids:
+        post_ids = get_posts(blog_id)
+
+        # Iterate through every post
+        for post_id in post_ids:
+            list_of_comments_dict = get_comments(blog_id, post_id)
+
+            # Iterate through every comment
+            for comment in list_of_comments_dict:
+                author_id = comment['author_id']
+                comment_id = comment['comment_id']
+                publish_date = comment['publish_date']
+
+                week = get_week_from_publish_date(publish_date)
+                if week < 0 or week > 16:
+                    print "error"
+                    # Change this
+                    return
+                week_comments_dict = total_comments_dictionary_for_week[week]
+
+                pprint.pprint(week_comments_dict)
+
+                if author_id in week_comments_dict.keys():
+                    pprint.pprint(week_comments_dict[author_id])
+                    week_comments_dict[author_id] = week_comments_dict[author_id].add(comment_id)
+                else:
+                    # set with comment_ids
+                    set_of_comment_ids = set()
+                    set_of_comment_ids.add(comment_id)
+                    week_comments_dict[author_id] = set_of_comment_ids
+
+    return total_comments_dictionary_for_week
+
+          
+def get_week_from_publish_date(publish_date):
+    date_in_long = rfc3339.strtotimestamp(publish_date)
+    for i in range(0, len(start_of_week) - 1):
+        if date_in_long > start_of_week[i] and date_in_long < start_of_week[i + 1]:
+            print "week ", i
+            return i
+    return -1
+
+#####################################################################
 #for each url, get all comments
 def get_comments_from_blogs(list_of_blog_urls):
     all_comments_dict = {}
@@ -104,10 +205,12 @@ def get_comments_from_blogs(list_of_blog_urls):
 #        file_to_write_to.write(list_of_comments+'\n')
 #    file_to_write_to.close()
 
+
 #writes to file, 'a' appends, 'w' just writes
 def test_write_to_file():
     with open('test.txt', 'a') as file_to_write_to:
         file_to_write_to.write('test\n')
+
         
 #gets the blog_urls from the file given
 def get_blog_urls_from_file(file):
@@ -115,9 +218,19 @@ def get_blog_urls_from_file(file):
     return blog_urls
 
 #################################################
-#list_of_blog_urls = get_blog_urls_from_file('blog_urls.txt')
 
-#print get_all_comments(blog_id)
-#print get_comments_from_blogs(list_of_blog_urls)
-test_write_to_file()
-#write_comments_from_blogs_to_file(list_of_blog_urls, 'blog_comments.txt')
+blog_URLs = get_blog_URLs()
+
+blog_IDs_dict = {}
+blog_authors_dict = {}
+
+for blog_URL in blog_URLs:
+    blog_ID = get_blog_id(blog_URL)
+    blog_IDs_dict[blog_URL] = blog_ID
+
+pprint.pprint(blog_IDs_dict)
+
+print '################################'
+print '################################'
+print '################################'
+print get_total_comments(blog_IDs_dict.itervalues())
