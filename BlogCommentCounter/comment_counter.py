@@ -110,12 +110,16 @@ def get_comments(blog_id, post_id):
 
     # Reformat response into a list
     comments = []
+
     for comment in response.get('items', []):
-        comments.append({
-            'author_id': str(comment['author']['id']),
-            'author_name': str(comment['author']['displayName']),
-            'comment_id': str(comment['id']),
-            'publish_date': str(comment['published'])})
+        try:
+            comments.append({
+                'author_id': str(comment['author']['id']),
+                'author_name': str(comment['author']['displayName']),
+                'comment_id': str(comment['id']),
+                'publish_date': str(comment['published'])})
+        except KeyError:
+            print 'Invalid comment detected.'
 
     return comments
 
@@ -164,16 +168,20 @@ def get_total_comments(blog_ids):
                     return
                 week_comments_dict = total_comments_dictionary_for_week[week]
 
-                pprint.pprint(week_comments_dict)
+                if author_id not in week_comments_dict.keys():
+                    week_comments_dict[author_id] = []
+                
+                week_comments_dict[author_id].append(comment_id)
 
-                if author_id in week_comments_dict.keys():
-                    pprint.pprint(week_comments_dict[author_id])
-                    week_comments_dict[author_id] = week_comments_dict[author_id].add(comment_id)
-                else:
-                    # set with comment_ids
-                    set_of_comment_ids = set()
-                    set_of_comment_ids.add(comment_id)
-                    week_comments_dict[author_id] = set_of_comment_ids
+                # if author_id in week_comments_dict.keys():
+                #     pprint.pprint(week_comments_dict[author_id])
+                #     week_comments_dict[author_id] = week_comments_dict[author_id].add(comment_id)
+                # else:
+                #     # set with comment_ids
+                #     set_of_comment_ids = set()
+                #     set_of_comment_ids.add(comment_id)
+                #     week_comments_dict[author_id] = set_of_comment_ids
+                #     pprint.pprint(week_comments_dict)
 
     return total_comments_dictionary_for_week
 
@@ -182,7 +190,7 @@ def get_week_from_publish_date(publish_date):
     date_in_long = rfc3339.strtotimestamp(publish_date)
     for i in range(0, len(start_of_week) - 1):
         if date_in_long > start_of_week[i] and date_in_long < start_of_week[i + 1]:
-            print "week ", i
+            #print "week ", i
             return i
     return -1
 
@@ -233,4 +241,4 @@ pprint.pprint(blog_IDs_dict)
 print '################################'
 print '################################'
 print '################################'
-print get_total_comments(blog_IDs_dict.itervalues())
+pprint.pprint(get_total_comments(blog_IDs_dict.itervalues()))
