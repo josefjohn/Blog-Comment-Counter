@@ -167,7 +167,7 @@ def get_author(blog_id, post_id):
 def get_total_comments(blog_ids):
     # Initialize dictionaries
     total_comments_dictionary_for_week = []
-    for i in range(0, len(start_of_week) - 1):
+    for i in range(0, get_week(sem_end_rfc3339)):
         total_comments_dictionary_for_week.append(dict())
 
     # Iterate through all blogs
@@ -175,7 +175,8 @@ def get_total_comments(blog_ids):
         post_ids = get_posts(blog_id)
 
         # Request and save author ID for later use
-        blog_authors_dict[get_author(blog_id, post_ids[0])] = blog_id
+        #blog_authors_dict[get_author(blog_id, post_ids[0])] = blog_id
+        blog_authors_dict[blog_id] = get_author(blog_id, post_ids[0])
 
         # Iterate through every post
         for post_id in post_ids:
@@ -259,26 +260,31 @@ print '######### BLOG_URL -> BLOG_ID'
 pprint.pprint(blog_IDs_dict)
 
 print '######### PROCESSED DATA'
-pprint.pprint(get_total_comments(blog_IDs_dict.itervalues()))
+data = get_total_comments(blog_IDs_dict.itervalues())
 
-print '######### AUTHOR_ID -> BLOG_ID'
+print '######### BLOG_ID -> AUTHOR_ID'
 pprint.pprint(blog_authors_dict)
 
 
 # Write to Google Docs Spreadsheet
-
-# Connect to Google Docs spreadsheet and get column with header 'Blog_URL'
 wks = gc.open(wks_name).sheet1
 
 url_header_col = wks.find('Blog_URL').col
+week1_col = wks.find('Week_1').col
 
-blog_URLs_list = wks.col_values(url_header_cell.col)
+for row in range(1, len(wks.col_values(url_header_col)) + 1):
+    print "Row: ", row, "Col: ", url_header_col
+    url = wks.cell(row, url_header_col).value
 
-# Filter through URLs to remove any non-Blogger entries
-blog_URLs_list = filter(is_blogger_URL, blog_URLs_list)
+    if url in blog_URLs:
+        for week in range(0, get_week(sem_end_rfc3339)):
+            author = blog_authors_dict[blog_IDs_dict[url]]
+            try:
+                comment_count = len(data[week][author])
+            except KeyError:
+                comment_count = 0
+            wks.update_cell(row, week1_col + week, comment_count)
+
 
 week_header_cell = wks.find('Week_1')
 blog_URLs_list = wks.col_values(week_header_cell.col)
-
-# Filter through URLs to remove any non-Blogger entries
-blog_URLs_list = filter(is_blogger_URL, blog_URLs_list)
