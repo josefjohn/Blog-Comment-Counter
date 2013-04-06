@@ -6,6 +6,10 @@ import gspread
 import rfc3339
 from apiclient.discovery import build
 from urlparse import urlparse
+from datetime import datetime
+
+# Record script start time
+script_start = datetime.now()
 
 # Google Docs Worksheet Info
 wks_name = 'Test Spreadsheet'
@@ -247,3 +251,5 @@ for row in range(1, len(wks.col_values(url_header_col)) + 1):
 
 week_header_cell = wks.find('Week_1')
 blog_URLs_list = wks.col_values(week_header_cell.col)
+
+print "Task completed in ", (datetime.now() - script_start)
