@@ -11,7 +11,7 @@ from urlparse import urlparse
 wks_name = 'Test Spreadsheet'
 
 # Semester dates
-sem_start = '2013-01-21'  # Must be a Monday
+sem_start = '2013-01-28'  # Must be a Monday
 sem_end = '2013-05-05'    # Must be a Sunday
 
 sem_start = rfc3339.strtotimestamp(sem_start + 'T00:00:00-08:00')
@@ -55,7 +55,6 @@ def get_blog_URLs():
 
 # Returns a boolean depending if URL is a Blogger/Blogspot URL
 def is_blogger_URL(url):
-    #return url.find('blogspot.com') != -1
     return url is not None and 'blogspot.com' in url
 
 
@@ -204,46 +203,6 @@ def get_week(publish_date_rfc3339):
     publish_date = rfc3339.strtotimestamp(publish_date_rfc3339)
     return int(math.floor((publish_date - sem_start) / week_in_seconds))
 
-
-def get_week_from_publish_date(publish_date):
-    date_in_long = rfc3339.strtotimestamp(publish_date)
-    for i in range(0, len(start_of_week) - 1):
-        if date_in_long > start_of_week[i] and date_in_long < start_of_week[i + 1]:
-            #print "week ", i
-            return i
-    return -1
-
-
-#####################################################################
-#for each url, get all comments
-def get_comments_from_blogs(list_of_blog_urls):
-    all_comments_dict = {}
-    for blog_url in list_of_blog_urls:
-        blog_id = get_blog_id(blog_url)
-        list_of_comments = get_all_comments(blog_id)
-        all_comments_dict[blog_id] = list_of_comments
-    return all_comments_dict
-
-#cant do this, can only write string not lists
-#def write_comments_from_blogs_to_file(list_of_blog_urls, file):
-#    file_to_write_to = open(file, 'w')
-#    for blog_url in list_of_blog_urls:
-#        blog_id = get_blog_id(blog_url)
-#        list_of_comments = get_all_comments(blog_id)
-#        file_to_write_to.write(list_of_comments+'\n')
-#    file_to_write_to.close()
-
-
-#writes to file, 'a' appends, 'w' just writes
-def test_write_to_file():
-    with open('test.txt', 'a') as file_to_write_to:
-        file_to_write_to.write('test\n')
-
-        
-#gets the blog_urls from the file given
-def get_blog_urls_from_file(file):
-    blog_urls = [blog_url.strip() for blog_url in open(file)]
-    return blog_urls
 
 #################################################
 
