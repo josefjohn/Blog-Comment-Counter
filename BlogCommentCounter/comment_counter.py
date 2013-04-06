@@ -1,7 +1,6 @@
 # Authors: Gautam Jain & Josef John
 
 import math
-import pprint
 import gspread
 import rfc3339
 from apiclient.discovery import build
@@ -30,9 +29,9 @@ sem_end_rfc3339 = rfc3339.timestamptostr(sem_end)
 # The private API key is stored in a separate file.
 api_key = open('private_key.txt').readline()
 
-# The apiclient.discovery.build() function returns an instance of an API service
-# object that can be used to make API calls. The object is constructed with
-# methods specific to the blogger API. The arguments provided are:
+# Returns an instance of an API service object that can be used to make API
+# calls. The object is constructed with methods specific to the blogger API.
+# The arguments provided are:
 #   name of the API ('blogger')
 #   version of the API you are using ('v3')
 #   API key
@@ -43,11 +42,12 @@ ga = open('google_account.txt').readline()
 gp = open('google_password.txt').readline()
 gc = gspread.login(ga, gp)
 
+# Connect to Google Docs spreadsheet and get column with header 'Blog_URL'
+wks = gc.open(wks_name).sheet1
 
-# Returns the a list of blog URLs from the Google Docs
+
+# Returns the a list of filtered blog URLs from the Google Docs
 def get_blog_URLs():
-    # Connect to Google Docs spreadsheet and get column with header 'Blog_URL'
-    wks = gc.open(wks_name).sheet1
     url_header_cell = wks.find('Blog_URL')
     blog_URLs_list = wks.col_values(url_header_cell.col)
 
@@ -83,7 +83,7 @@ def get_posts(blog_id):
     post_ids = []
     page_token = ''
     while True:
-        # Request a list of posts between specified dates. Only return post IDs.
+        # Request a list of posts between specified dates. Only return post IDs
         if (page_token == ''):
             response = blogger.posts().list(
                 blogId=blog_id,
@@ -136,7 +136,7 @@ def get_comments(blog_id, post_id):
                 'comment_id': str(comment['id']),
                 'publish_date': str(comment['published'])})
         except KeyError:
-            print 'Invalid comment detected.'
+            print '\nInvalid comment detected.'
 
     return comments
 
@@ -162,19 +162,17 @@ def get_author(blog_id, post_id):
     return str(response.get('author')['id'])
 
 
-#returns list of dictionaries
-#each dictionary maps to a week
-#each dictionary contains author_id keys mapping to a set of comment_ids for that week
-#for each dictionary, keys are author_id, values are sets of the comments
-#call len(dict[author_id]) to get comments for a given week
+# Returns a list of dictionaries, one for each week of the semester.  Each
+# dictionary maps an author_id to a list of related comment_ids.
 def get_total_comments(blog_ids):
     # Initialize dictionaries
     total_comments_dictionary_for_week = []
-    for i in range(0, get_week(sem_end_rfc3339)):
+    for i in range(0, num_of_weeks):
         total_comments_dictionary_for_week.append(dict())
 
     # Iterate through all blogs
     for blog_id in blog_ids:
+        print ".",
         post_ids = get_posts(blog_id)
 
         # Request and save author ID for later use
@@ -191,13 +189,11 @@ def get_total_comments(blog_ids):
                 comment_id = comment['comment_id']
                 publish_date = comment['publish_date']
                 week = get_week(publish_date)
-                print str(week),
-
                 week_comments_dict = total_comments_dictionary_for_week[week]
 
                 if author_id not in week_comments_dict.keys():
                     week_comments_dict[author_id] = []
-                
+
                 week_comments_dict[author_id].append(comment_id)
 
     return total_comments_dictionary_for_week
@@ -209,47 +205,57 @@ def get_week(publish_date_rfc3339):
 
 
 #################################################
+print "Task started at", script_start
+num_of_weeks = get_week(sem_end_rfc3339)
 
-blog_URLs = get_blog_URLs()
+print "Retrieving blog URLs... ",
+filtered_URLs = get_blog_URLs()
+print len(filtered_URLs), "blogs found."
 
+#BLOG_URL -> BLOG_ID
 blog_IDs_dict = {}
+
+#BLOG_ID -> AUTHOR_ID
 blog_authors_dict = {}
 
-for blog_URL in blog_URLs:
+print "Retrieving blog ID numbers..."
+for blog_URL in filtered_URLs:
     blog_ID = get_blog_id(blog_URL)
     blog_IDs_dict[blog_URL] = blog_ID
 
-print '######### BLOG_URL -> BLOG_ID'
-pprint.pprint(blog_IDs_dict)
-
-print '######### PROCESSED DATA'
+print "Counting comments..."
 data = get_total_comments(blog_IDs_dict.itervalues())
 
-print '######### BLOG_ID -> AUTHOR_ID'
-pprint.pprint(blog_authors_dict)
+print "\nUpdating Google Docs - ", wks_name
 
-
-# Write to Google Docs Spreadsheet
-wks = gc.open(wks_name).sheet1
-
+# Get the col # and col letter of certain spreadsheet columns
 url_header_col = wks.find('Blog_URL').col
 week1_col = wks.find('Week_1').col
+week1_col_alphabet = str(unichr(week1_col + 96))
+last_week_col_alphabet = str(unichr(week1_col + num_of_weeks + 96))
 
-for row in range(1, len(wks.col_values(url_header_col)) + 1):
-    print "Row: ", row, "Col: ", url_header_col
-    url = wks.cell(row, url_header_col).value
+# Get a list of all values for Blog_URL column
+url_column = wks.col_values(url_header_col)
 
-    if url in blog_URLs:
-        for week in range(0, get_week(sem_end_rfc3339)):
+# Get number of rows and all blog URL
+for row in range(1, len(url_column) + 1):
+    url = url_column[row - 1]
+
+    if url in filtered_URLs:
+        print ".",
+        # Get a list of all cells for the current row
+        start_cell = week1_col_alphabet + str(row)
+        end_cell = last_week_col_alphabet + str(row)
+        scores_list = wks.range(start_cell + ':' + end_cell)
+
+        for week in range(0, num_of_weeks):
             author = blog_authors_dict[blog_IDs_dict[url]]
             try:
                 comment_count = len(data[week][author])
             except KeyError:
                 comment_count = 0
-            wks.update_cell(row, week1_col + week, comment_count)
+            scores_list[week].value = comment_count
 
+        wks.update_cells(scores_list)
 
-week_header_cell = wks.find('Week_1')
-blog_URLs_list = wks.col_values(week_header_cell.col)
-
-print "Task completed in ", (datetime.now() - script_start)
+print "\nTask completed in", (datetime.now() - script_start)
