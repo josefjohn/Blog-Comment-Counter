@@ -4,19 +4,22 @@ Blog-Comment-Counter
 
 2. Install [setuptools (32-bit version)](https://pypi.python.org/pypi/setuptools#files)
 
-3. Install the Google Blogger API library, by running `easy_install --upgrade google-api-python-client`
+3. Edit system environmental variables. In 'System Properties', click 'Environment Variables'. Under 'System Variables', click on 'Path' and 'edit'. 
+Append 'C:\Python27' and 'C:\Python27\Scripts' at the end of the current values. Make sure they are separated by ';'. Click 'ok' and 'ok' again to save the settings.
 
-4. In terminal run `easy_install gspread`
+4. Install the Google Blogger API library, by running `easy_install --upgrade google-api-python-client`
+
+5. In terminal run `easy_install gspread`
 this installs the library that helps access googleDocs
 
-5. Download from github the code, should have `comment_counter.py` and `rfc3339.py`
+6. Download from github the code, should have `comment_counter.py` and `rfc3339.py`
 
-6. Put your gmail that access the google doc in `google_account.txt`
+7. Put your gmail that access the google doc in `google_account.txt`
 
-7. Put your password inside `google_password.txt`
+8. Put your password inside `google_password.txt`
 
-8. Download attached `private_key.txt` from email and put in same folder as all the rest of this (this is a private key from Google that gives metered access to bloggerAPI, do not share or post publically.)
+9. Download attached `private_key.txt` from email and put in same folder as all the rest of this (this is a private key from Google that gives metered access to bloggerAPI, do not share or post publically.)
 
-9. Open `comment_counter.py` and update `wks_name` (name of the googleDoc), `sem_start` (date of first class of semester), `sem_end` (date of last day of the semester)
+10. Open `comment_counter.py` and update `wks_name` (name of the googleDoc), `sem_start` (date of first class of semester), `sem_end` (date of last day of the semester)
 
-10. Run `python comment_counter.py`
+11. Run `python comment_counter.py`
